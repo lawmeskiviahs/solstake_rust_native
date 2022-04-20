@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
+import { Borsh, Account, AnyPublicKey, StringPublicKey } from './borsh
 import {
   Keypair,
   Connection,
@@ -16,6 +16,8 @@ import path from 'path';
 import * as borsh from 'borsh';
 
 import {getPayer, getRpcUrl, createKeypairFromFile} from './utils';
+import * as BufferLayout from '@solana/buffer-layout';
+import { Buffer } from 'buffer';
 
 /**
  * Connection to the network
@@ -55,6 +57,7 @@ const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'helloworld.so');
  * This file is created when running `solana program deploy dist/program/helloworld.so`
  */
 const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
+
 
 /**
  * The state of a greeting account managed by the hello world program
@@ -253,8 +256,9 @@ export async function checkProgram(): Promise<void> {
   console.log(`Using program ${programId.toBase58()}`);
 
   // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
-  //pubkey as string + "deposit"+ '1' 
-  const GREETING_SEED = 'hellotest3';
+  //pubkey as string + "deposit"+ '1'
+  let iterator = 0;
+  const GREETING_SEED = '9jud739eoWfqPcJ3h2x7oLVeT4ULJCwHTt59cRg4taBb'+iterator;
   greetedPubkey = await PublicKey.createWithSeed(
     payer.publicKey,
     GREETING_SEED,
@@ -291,12 +295,100 @@ export async function checkProgram(): Promise<void> {
 /**
  * Say hello
  */
+
+ export async function createMetadataV2(
+  data: DataV2,
+  updateAuthority: StringPublicKey,
+  mintKey: StringPublicKey,
+  mintAuthorityKey: StringPublicKey,
+  instructions: TransactionInstruction[],
+  payer: StringPublicKey,
+) {
+  const metadataProgramId = programId;
+
+  const task = new GreetingAccount({
+    deposits:0,
+  plan: [],
+  percent: 0,
+  amount: 0, 
+  profit: 0,
+  start: 0,
+  finish: 0,
+  checkpoint: 0,
+  // referrer = "";
+  level1: 0,
+  level2: 0,                                                                                                                                                                                                         
+  level3: 0,
+  bonus: 0,
+  totalbonus: 0,
+  });
+  console.log(task);
+  const buf = borsh.serialize(GreetingSchema, task);
+  let iterator = 0;
+  let pubkey = new PublicKey('9jud739eoWfqPcJ3h2x7oLVeT4ULJCwHTt59cRg4taBb');
+  let seeds = [Buffer.from('deposit'+iterator), pubkey.toBytes()];
+  const result = await PublicKey.findProgramAddress(seeds, programId);
+  
+  const keys = [
+    {
+      pubkey: toPublicKey(metadataAccount),
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: toPublicKey(mintKey),
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: toPublicKey(mintAuthorityKey),
+      isSigner: true,
+      isWritable: false,
+    },
+    {
+      pubkey: toPublicKey(payer),
+      isSigner: true,
+      isWritable: false,
+    },
+    {
+      pubkey: toPublicKey(updateAuthority),
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: SystemProgram.programId,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: SYSVAR_RENT_PUBKEY,
+      isSigner: false,
+      isWritable: false,
+    },
+  ];
+  instructions.push(
+    new TransactionInstruction({
+      keys,
+      programId: metadataProgramId,
+      data: Buffer.from(buf),
+    }),
+  );
+  
+  await sendAndConfirmTransaction(
+    connection,
+    new Transaction().add(instructions),
+    [payer],
+  );
+}
+  return metadataAccount;
+}
+
 export async function sayHello(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
     programId,
-    data: Buffer.alloc(0), // All instructions are hellos
+    data: Buffer.alloc(0), 
   });
   await sendAndConfirmTransaction(
     connection,
@@ -305,12 +397,35 @@ export async function sayHello(): Promise<void> {
   );
 }
 
+// function createSayHelloInstructionData(): Buffer {
+//   const dataLayout = BufferLayout.struct([
+//     BufferLayout.u32('amount'), BufferLayout.u32('plan')
+//   ],
+//   );
+
+  // const data = Buffer.alloc(dataLayout.span);
+  // dataLayout.encode({
+  //   amount: 2,
+  //   plan: 1
+  // }, data);
+// console.log('data:------->', data )
+  // return data;
+// }
+
 /**
  * Report the number of times the greeted account has been said hello to
  */
 export async function reportGreetings(): Promise<void> {
+  console.log('report greetings')
+  let iterator = 0;
+  const GREETING_SEED = '9jud739eoWfqPcJ3h2x7oLVeT4ULJCwHTt59cRg4taBb'+iterator;
+  var enc = new TextEncoder();
+  const [deposit_account, bump] = await PublicKey.findProgramAddress(
+    [enc.encode(GREETING_SEED)],
+    programId
+  );
   // while x=0
-  const accountInfo = await connection.getAccountInfo(greetedPubkey);
+  const accountInfo = await connection.getAccountInfo(deposit_account);
   if (accountInfo === null) {
     //create account
     throw 'Error: cannot find the greeted account';
