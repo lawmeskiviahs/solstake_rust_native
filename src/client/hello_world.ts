@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Borsh, Account, AnyPublicKey, StringPublicKey } from './borsh
+// import { Borsh, Account, AnyPublicKey, StringPublicKey } from './borsh
 import {
   Keypair,
   Connection,
@@ -10,6 +10,7 @@ import {
   TransactionInstruction,
   Transaction,
   sendAndConfirmTransaction,
+  SYSVAR_RENT_PUBKEY,
 } from '@solana/web3.js';
 import fs from 'mz/fs';
 import path from 'path';
@@ -297,11 +298,11 @@ export async function checkProgram(): Promise<void> {
  */
 
  export async function createMetadataV2(
-  data: DataV2,
-  updateAuthority: StringPublicKey,
-  mintKey: StringPublicKey,
-  mintAuthorityKey: StringPublicKey,
-  instructions: TransactionInstruction[],
+  // data: DataV2,
+  // updateAuthority: StringPublicKey,
+  // mintKey: StringPublicKey,
+  // mintAuthorityKey: StringPublicKey,
+  instructions: any,
   payer: StringPublicKey,
 ) {
   const metadataProgramId = programId;
@@ -327,32 +328,31 @@ export async function checkProgram(): Promise<void> {
   let iterator = 0;
   let pubkey = new PublicKey('9jud739eoWfqPcJ3h2x7oLVeT4ULJCwHTt59cRg4taBb');
   let seeds = [Buffer.from('deposit'+iterator), pubkey.toBytes()];
-  const result = await PublicKey.findProgramAddress(seeds, programId);
-  
+  const [data_account, bump] = await PublicKey.findProgramAddress(seeds, programId);
+  // let
+  // const [listAccount, bump] = await PublicKey.findProgramAddress(
+  //   [Buffer.from("arpanjossan69"), donator.publicKey.toBytes(),name ],
+  //   programId
+  // );
   const keys = [
     {
-      pubkey: toPublicKey(metadataAccount),
+      pubkey: data_account,
       isSigner: false,
       isWritable: true,
     },
     {
-      pubkey: toPublicKey(mintKey),
+      pubkey: depositor_account,
       isSigner: false,
       isWritable: false,
     },
     {
-      pubkey: toPublicKey(mintAuthorityKey),
+      pubkey: referrer_account,
       isSigner: true,
       isWritable: false,
     },
     {
-      pubkey: toPublicKey(payer),
+      pubkey: depositor_account,
       isSigner: true,
-      isWritable: false,
-    },
-    {
-      pubkey: toPublicKey(updateAuthority),
-      isSigner: false,
       isWritable: false,
     },
     {
@@ -369,7 +369,7 @@ export async function checkProgram(): Promise<void> {
   instructions.push(
     new TransactionInstruction({
       keys,
-      programId: metadataProgramId,
+      programId: programId,
       data: Buffer.from(buf),
     }),
   );
@@ -379,8 +379,8 @@ export async function checkProgram(): Promise<void> {
     new Transaction().add(instructions),
     [payer],
   );
-}
-  return metadataAccount;
+
+  return data_account;
 }
 
 export async function sayHello(): Promise<void> {
