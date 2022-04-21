@@ -9,7 +9,9 @@ use solana_program::{
 };
 
 /// Define the type of state stored in accounts
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
+// #[derive(BorshSerialize, BorshDeserialize, Debug)]
+#[repr(C)]
+#[derive(Clone, BorshSerialize, BorshDeserialize, Debug)]
 pub struct DepositAccount {
     pub deposits:u32,
     pub plan:u32,
@@ -42,8 +44,9 @@ pub fn process_instruction(
     accounts: &[AccountInfo], // The account to say hello to
     _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
 ) -> ProgramResult {
-
-    pub const PREFIX: &str = "deposit";
+    msg!("Hello World program entrypoint");
+    
+    pub const PREFIX: &str = "depositt239862";
     pub const MAX_NAME_LENGTH: usize = 32;
     pub const MAX_SYMBOL_LENGTH: usize = 10;
     pub const MAX_URI_LENGTH: usize = 200;
@@ -73,24 +76,27 @@ pub fn process_instruction(
 + 2 // token standard
 + 118; // Padding
 
-    msg!("Hello World program entrypoint");
     
     // Iterating accounts is safer than indexing
     let accounts_iter = &mut accounts.iter();
 
     // initializing accounts
     let deposit_account = next_account_info(accounts_iter)?;
-    let rent_info = next_account_info(accounts_iter)?;
-    let system_account_info = next_account_info(accounts_iter)?;
+    let depositor_account = next_account_info(accounts_iter)?;
+    let referrer_account = next_account_info(accounts_iter)?;
     let payer_account_info = next_account_info(accounts_iter)?;
-    let ref1account = next_account_info(accounts_iter)?;
-    let ref2account = next_account_info(accounts_iter)?;
-    let ref3account = next_account_info(accounts_iter)?;
+    let system_account_info = next_account_info(accounts_iter)?;
+    let rent_info = next_account_info(accounts_iter)?;
+    // let ref1account = next_account_info(accounts_iter)?;
+    // let ref2account = next_account_info(accounts_iter)?;
+    // let ref3account = next_account_info(accounts_iter)?;
 
-    let metadata_seeds = &[
-        PREFIX.as_bytes(),
-        program_id.as_ref(),
-    ];
+    // let metadata_seeds = &[
+    //     PREFIX.as_bytes(),
+    //     // &deposit_account.key.to_bytes(),
+    // ];
+    let metadata_seeds = &["deposit".as_bytes()];
+    msg!("seeds {:?}", metadata_seeds);
 
     let (metadata_key, metadata_bump_seed) =
         Pubkey::find_program_address(metadata_seeds, program_id);
@@ -119,16 +125,16 @@ pub fn process_instruction(
 
 
     // The account must be owned by the program in order to modify its data
-    if deposit_account.owner != program_id {
-        msg!("Greeted account does not have the correct program id");
-        return Err(ProgramError::IncorrectProgramId);
-    }
+    // if deposit_account.owner != program_id {
+    //     msg!("Greeted account does not have the correct program id");
+    //     return Err(ProgramError::IncorrectProgramId);
+    // }
 
     // collecting data passed in the instruction 
     let mut deposit_account = DepositAccount::try_from_slice(&deposit_account.data.borrow())?;
-    let mut ref1account = DepositAccount::try_from_slice(&ref1account.data.borrow())?;
-    let mut ref2account = DepositAccount::try_from_slice(&ref2account.data.borrow())?;
-    let mut ref3account = DepositAccount::try_from_slice(&ref3account.data.borrow())?;
+    // let mut ref1account = DepositAccount::try_from_slice(&ref1account.data.borrow())?;
+    // let mut ref2account = DepositAccount::try_from_slice(&ref2account.data.borrow())?;
+    // let mut ref3account = DepositAccount::try_from_slice(&ref3account.data.borrow())?;
 
     // collecting instruction data
     let amount : u32 = From::from(_instruction_data[0]);
@@ -153,27 +159,27 @@ pub fn process_instruction(
     // deposit_account.plan.push(1);
 
     // increment level counters for referrers
-    ref1account.level1=ref1account.level1+1;
-    ref2account.level2=ref2account.level2+1;
-    ref3account.level3=ref3account.level3+1;
+    // ref1account.level1=ref1account.level1+1;
+    // ref2account.level2=ref2account.level2+1;
+    // ref3account.level3=ref3account.level3+1;
 
     // add bonus to ref1account 
     let mut refamount =  referal_percents[0];
     refamount = refamount / percents_divider;
-    ref1account.bonus = ref1account.bonus + refamount;
-    ref1account.totalbonus = ref1account.totalbonus + refamount;
+    // ref1account.bonus = ref1account.bonus + refamount;
+    // ref1account.totalbonus = ref1account.totalbonus + refamount;
 
     // add bonus to ref2account
     let mut refamount =  referal_percents[1];
     refamount = refamount / percents_divider;
-    ref2account.bonus = ref2account.bonus + refamount;
-    ref2account.totalbonus = ref2account.totalbonus + refamount;
+    // ref2account.bonus = ref2account.bonus + refamount;
+    // ref2account.totalbonus = ref2account.totalbonus + refamount;
 
     // add bonus to ref3account
     let mut refamount =  referal_percents[2];
     refamount = refamount / percents_divider;
-    ref3account.bonus = ref3account.bonus + refamount;
-    ref3account.totalbonus = ref3account.totalbonus + refamount;
+    // ref3account.bonus = ref3account.bonus + refamount;
+    // ref3account.totalbonus = ref3account.totalbonus + refamount;
 
     deposit_account.deposits = amount;
     deposit_account.plan = plan;
