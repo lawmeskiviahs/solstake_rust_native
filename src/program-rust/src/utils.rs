@@ -23,6 +23,7 @@ pub struct CreateMetadataAccountsLogicArgs<'a> {
     pub rent_info: &'a AccountInfo<'a>,
 }
 
+#[inline(always)]
 pub fn create_or_allocate_account_raw<'a>(
     program_id: Pubkey,
     new_account_info: &AccountInfo<'a>,
